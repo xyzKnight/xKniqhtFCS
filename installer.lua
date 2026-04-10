@@ -8,6 +8,7 @@ local files = {
     { "math_utils_v6.lua", "https://raw.githubusercontent.com/xyzKnight/xKniqhtFCS/refs/heads/main/math_utils_v6.lua" },
     { "predictor.lua", "https://raw.githubusercontent.com/xyzKnight/xKniqhtFCS/refs/heads/main/predictor.lua" },
     { "config.lua", "https://raw.githubusercontent.com/xyzKnight/xKniqhtFCS/refs/heads/main/config.lua" },
+    {"README.md", "https://raw.githubusercontent.com/xyzKnight/xKniqhtFCS/refs/heads/main/README.md"},
 }
 
 -- INSTALLER
@@ -60,7 +61,4 @@ print("Run main.lua to use!")
 
 os.sleep(0.5)
 
-local this = shell.getRunningProgram()
-if this then
-    fs.delete(this)
-end
+
