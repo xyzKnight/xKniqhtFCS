@@ -1,3 +1,4 @@
+-- wget run https://raw.githubusercontent.com/xyzKnight/xKniqhtFCS/refs/heads/main/installer.lua
 
 local projectDir = "xKniqhtFCS"
 
