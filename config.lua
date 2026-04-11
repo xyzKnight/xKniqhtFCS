@@ -54,9 +54,9 @@ c.solver.predictor = {
     -- aircraft live in banked turns --> CTRA
     -- constant acceleration target --> CA
     bias = {
-        cv   = 0.1,
-        ca   = 0.5,
-        ctra = 2.0,
+        cv   = 0.0,
+        ca   = 1.0,
+        ctra = 0.0,
     },
 
     -- error sensitivity
