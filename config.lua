@@ -13,7 +13,7 @@ c.solver.cannon = {
     barrel_len   = 6
 }
 
---
+
 -- solver projectile config rotary
 c.solver.projectile = {
     muzzle_speed     = 9,       
@@ -21,17 +21,17 @@ c.solver.projectile = {
     drag_multiplier  = 0.99,
     proximity_detonation = 0
 }
---
 
---[[
+
+
 -- solver projectile config medium
-c.solver.projectile = {
-    muzzle_speed     = 17,       
-    gravity          = 0.04,
-    drag_multiplier  = 0.99,
-    proximity_detonation = 0
-}
-]]
+--c.solver.projectile = {
+    --muzzle_speed     = 17,       
+    --gravity          = 0.04,
+    --drag_multiplier  = 0.99,
+    --proximity_detonation = 0
+--}
+
 
 -- predictor config
 c.solver.predictor = {
