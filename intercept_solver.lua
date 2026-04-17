@@ -44,7 +44,7 @@ function solver:simulateProjectile(aimVec, t_start)
         sim_proj_velo = (sim_proj_velo - gravity_vec):scale(drag)
         sim_proj_pos  = sim_proj_pos + sim_proj_velo
 
-        sim_target_pos = self.predictor:predictCTRA(t)
+        sim_target_pos = self.predictor:predictIMM(t)
 
         local target_mid = (prev_target_pos + sim_target_pos):scale(0.5)
         local miss_dist, closest_proj_pos = vec3.segmentPointDistance(prev_proj_pos, sim_proj_pos, target_mid)
