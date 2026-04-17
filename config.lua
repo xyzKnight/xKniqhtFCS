@@ -9,7 +9,7 @@ c.solver = {}
 
 -- cannon config
 c.solver.cannon = {
-    pos    = vec3.new(-8,58,0),
+    pos    = vec3.new(0,0,0),
     barrel_len   = 6
 }
 
@@ -88,8 +88,8 @@ c.peripheral = {
     RADAR_TYPE              = "sp_radar",
 
     -- the index in the table of all connected speed controllers that maps to pitch / yaw
-    PITCH_RSC_INDEX = 2,
-    YAW_RSC_INDEX   = 1,
+    PITCH_RSC_INDEX = 1,
+    YAW_RSC_INDEX   = 2,
 
     -- whether or not to invert the RPM output
     PITCH_RSC_SIGN  = -1,
