@@ -1,4 +1,4 @@
-# CC:FCS v1.1.1
+# CC:FCS
 - Work in progress!
 - CC:Tweaked Advanced fire control system for the Create: Big Cannons Minecraft mod.
 - Designed with compatability in mind for Create: Aeronautics
