@@ -8,16 +8,13 @@ local quat = u.Quaternion
 local Predictor = require("predictor")
 
 -- CONSTANTS
-local projectile_y_break_dist = 50  
+local projectile_y_break_dist = 50
 local small                   = 1e-6
 
 local solver = {}
 solver.__index = solver
 
--- simulates projectile and target trajectory to find closest pass
 function solver:simulateProjectile(aimVec, t_start)
-    local function getDisplacement(v, a, dt) return v:scale(dt) + a:scale(dt * dt * 0.5) end
-    local t           = t_start
     local cannon_pos  = self.c.cannon.pos
     local gravity_vec = vec3.new(0, self.c.projectile.gravity, 0)
     local drag        = self.c.projectile.drag_multiplier
@@ -27,27 +24,39 @@ function solver:simulateProjectile(aimVec, t_start)
     local sim_proj_pos  = cannon_pos + aimVec:scale(self.c.cannon.barrel_len)
     local sim_proj_velo = aimVec:scale(self.c.projectile.muzzle_speed)
 
-    local sim_target_pos = self.target.pos + getDisplacement(self.target.velo, self.target.accel, t)
-    local target_velo_at_t = self.target.velo + self.target.accel:scale(t)
+    local tick_table  = self._tick_table
+    local table_steps = self._table_steps
 
+    -- t_start already incorporates snapshot age + pipeline delay; index directly
+    local function targetPosAt(t)
+        local i_f = t / sim_dt
+        local i   = math.floor(i_f)
+        local f   = i_f - i
+        i = math.max(0, math.min(i, table_steps - 1))
+        return tick_table[i] + (tick_table[i + 1] - tick_table[i]) * f
+    end
+
+    local t              = t_start
     local min_miss_dist  = math.huge
     local min_proj_pos   = sim_proj_pos
-    local min_target_pos = sim_target_pos
+    local min_target_pos = targetPosAt(t)
     local min_time       = t
 
     while t <= max_t do
         local prev_proj_pos   = sim_proj_pos
-        local prev_target_pos = sim_target_pos
+        local prev_target_pos = targetPosAt(t)
 
         t = t + sim_dt
 
         sim_proj_velo = (sim_proj_velo - gravity_vec):scale(drag)
         sim_proj_pos  = sim_proj_pos + sim_proj_velo
 
-        sim_target_pos = self.predictor:predictIMM(t)
+        local sim_target_pos = targetPosAt(t)
+        local target_mid     = (prev_target_pos + sim_target_pos):scale(0.5)
 
-        local target_mid = (prev_target_pos + sim_target_pos):scale(0.5)
-        local miss_dist, closest_proj_pos = vec3.segmentPointDistance(prev_proj_pos, sim_proj_pos, target_mid)
+        local miss_dist, closest_proj_pos = vec3.segmentPointDistance(
+            prev_proj_pos, sim_proj_pos, target_mid
+        )
 
         if miss_dist <= min_miss_dist then
             min_miss_dist  = miss_dist
@@ -74,12 +83,12 @@ function solver:simulateProjectile(aimVec, t_start)
     }
 end
 
--- Iteratively rotates aimVec toward the intercept point.
 function solver:convergeAim(t_start)
     local aimVec
     if self._last_aim_vec then
         local target_jump = (self.target.pos - self._last_target_pos):length()
-        if target_jump < 200 then
+        -- invalidate warm-start if target jumped or last solution was far off
+        if target_jump < 10 and self._last_miss_dist < self.c.sys.converge_reset_miss then
             aimVec = self._last_aim_vec
         end
     end
@@ -89,7 +98,9 @@ function solver:convergeAim(t_start)
     local cpass = self:simulateProjectile(aimVec, t_start)
 
     for i = 1, self.c.sys.converge_iterations do
-        local shot_dir   = (cpass.proj_pos   - self.c.cannon.pos):norm()
+        if cpass.miss_dist < self.c.sys.converge_tolerance then break end
+
+        local shot_dir   = (cpass.proj_pos - self.c.cannon.pos):norm()
         local target_dir = cpass.miss_dir
 
         local axis     = shot_dir:cross(target_dir)
@@ -106,13 +117,14 @@ function solver:convergeAim(t_start)
             self.c.sys.converge_max_step
         )
 
-        local q    = quat.fromAxisAngle(axis, step)
-        aimVec     = aimVec:rotateByQuat(q):norm()
-        cpass      = self:simulateProjectile(aimVec, t_start)
+        local q = quat.fromAxisAngle(axis, step)
+        aimVec  = aimVec:rotateByQuat(q):norm()
+        cpass   = self:simulateProjectile(aimVec, t_start)
     end
 
     self._last_aim_vec    = aimVec
     self._last_target_pos = self.target.pos
+    self._last_miss_dist  = cpass.miss_dist
 
     local pitch, yaw = aimVec:aimAt()
     return {
@@ -125,16 +137,21 @@ function solver:convergeAim(t_start)
     }
 end
 
--- returns pitch and yaw to aim to hit a given target 
-function solver:solve(target_data, t_start)
+function solver:solve(target_data, t_pipeline)
     if target_data.pos == nil or target_data.velo == nil then return 0, 0 end
 
     self.predictor:update(target_data)
-    local state     = self.predictor:getState()
-    self.target     = state
 
-    self.intercept  = self:convergeAim(t_start)
-    print("tgo:",self.intercept.time)
+    local read_time
+    self._tick_table, self._table_steps, read_time = self.predictor:getTickTable()
+
+    -- account for actual snapshot age so t=0 in the tick table maps to now
+    local snapshot_age = os.clock() - (read_time or os.clock())
+    local t_start      = t_pipeline + snapshot_age
+
+    self.target    = self.predictor:getState()
+    self.intercept = self:convergeAim(t_start)
+    print("tgo:", self.intercept.time)
     return self.intercept.pitch, self.intercept.yaw
 end
 
@@ -161,6 +178,10 @@ function solver.new(config)
 
     self._last_aim_vec    = nil
     self._last_target_pos = vec3.new(0, 0, 0)
+    self._last_miss_dist  = math.huge
+    self._tick_table      = {}
+    self._table_steps     = 0
+
     return self
 end
 
