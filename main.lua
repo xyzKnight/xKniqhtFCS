@@ -2,7 +2,7 @@
 
 term.clear()
 term.setCursorPos(1,1)
-print("xKniqhtFCS CONTROLLER BOOT:")
+print("CC:FCS CONTROLLER BOOT:")
 
 -- IMPORTS
 local u = require("math_utils_v6")
