@@ -10,3 +10,4 @@ Required Mods:
 - Create
 - Create: Big Cannons
 - CBC:MW (Create: Big Cannons: Modern Warfare)
+- Valkyrien Skies
