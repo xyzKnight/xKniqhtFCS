@@ -9,93 +9,76 @@ c.solver = {}
 
 -- cannon config
 c.solver.cannon = {
-    pos    = vec3.new(0,0,0),
-    barrel_len   = 6
+    pos        = vec3.new(0, 0, 0),
+    barrel_len = 6
 }
-
 
 -- solver projectile config rotary
 c.solver.projectile = {
-    muzzle_speed     = 9,       
-    gravity          = 0.025,
-    drag_multiplier  = 0.99,
+    muzzle_speed         = 9,
+    gravity              = 0.025,
+    drag_multiplier      = 0.99,
     proximity_detonation = 0
 }
 
-
-
 -- solver projectile config medium
 --c.solver.projectile = {
-    --muzzle_speed     = 17,       
-    --gravity          = 0.04,
-    --drag_multiplier  = 0.99,
-    --proximity_detonation = 0
+--    muzzle_speed         = 17,
+--    gravity              = 0.04,
+--    drag_multiplier      = 0.99,
+--    proximity_detonation = 0
 --}
-
 
 -- predictor config
 c.solver.predictor = {
 
     dt = 0.05,
 
+    -- "dumb"     --> Constant Acceleration (CA)
+    -- "aircraft" --> CTRA numerically integrated
+    mode = "dumb",
+
+    -- true  --> use omega + quaternion from radar peripheral
+    -- false --> derive turn rate from smoothed velocity x acceleration
+    -- only used with plane mode: true
+    use_radar_rotation = false,
+
     -- physical constraints
-    max_speed = 75.0,
-    max_accel = 20.0,   
-    min_speed = 1.0,    
-                     
+    max_speed = 1000.0,
+    max_accel = 20.0,
+    min_speed = 1.0,
 
-    -- IMM weight smoothing
-    model_weight_alpha = 0.1,
-
-    -- acceleration smoothing
-    accel_alpha = 0.08,
-
-    -- model bias
-    -- aircraft live in banked turns --> CTRA
-    -- constant acceleration target --> CA
-    bias = {
-        cv   = 0.0,
-        ca   = 1.0,
-        ctra = 0.0,
-    },
-
-    -- error sensitivity
-    error_gain = 1.0,
-
-    -- turn detection threshold
-    omega_small = 1e-5,
-
-    -- stability clamp
-    min_weight = 0.01,
+    -- velocity + acceleration EMA smoothing (same alpha for both, keeps them consistent)
+    accel_alpha = 0.3,
+    max_sim_time = 10,
 
 }
 
 -- solver system constants
 c.solver.sys = {
     dt                   = 0.05,
-    converge_iterations  = 5,
+    converge_iterations  = 7,
     converge_sensitivity = 0.4,
     converge_max_step    = math.huge,
+    converge_tolerance   = 0.1,   -- stop iterating early if miss_dist drops below this (blocks)
+    converge_reset_miss  = 50,    -- invalidate warm-start aim vec if last miss_dist exceeded this
     max_sim_time         = 10,
     min_pitch            = 0
 }
 
 -- peripheral config
 c.peripheral = {
-    -- replace with names given by command <peripherals>
-    RSC_TYPE                = "Create_RotationSpeedController",
-    BLOCK_READER_TYPE       = "blockReader",
-    RADAR_TYPE              = "sp_radar",
+    RSC_TYPE          = "Create_RotationSpeedController",
+    BLOCK_READER_TYPE = "blockReader",
+    RADAR_TYPE        = "sp_radar",
 
-    -- the index in the table of all connected speed controllers that maps to pitch / yaw
-    PITCH_RSC_INDEX = 1,
-    YAW_RSC_INDEX   = 2,
+    PITCH_RSC_INDEX = 2,
+    YAW_RSC_INDEX   = 1,
 
-    -- whether or not to invert the RPM output
     PITCH_RSC_SIGN  = -1,
     YAW_RSC_SIGN    = 1,
 
-    RADAR_SCAN_RANGE = 2000
+    RADAR_SCAN_RANGE = 10000
 }
 
 -- controller pipeline
